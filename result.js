@@ -1,21 +1,22 @@
+"use strict";
+
 const inspect = require("util").inspect;
 
-const Ok = function (t) {
-    const Result = Object.create(methods);
-    Result.is_ok = true;
-    Result.value = t;
-    return Result;
-};
+function Ok(t) {
+    return new Result(true, t);
+}
 
-const Fail = function (f) {
-    const Result = Object.create(methods);
-    Result.is_ok = false;
-    Result.value = f;
-    return Result;
-};
+function Fail(f) {
+    return new Result(false, f);
+}
 
-const methods = {
-    ok: function (/*this,*/ errorMessage) {
+function Result(is_ok, value) {
+    this.is_ok = is_ok
+    this.value = value
+}
+
+Result.prototype = {
+    ok(/*this,*/ errorMessage) {
         if (this.is_ok) {
             return this.value;
         } else {
@@ -27,7 +28,7 @@ const methods = {
         }
     },
 
-    fail: function (/*this,*/ errorMessage) {
+    fail(/*this,*/ errorMessage) {
         if (this.is_ok) {
             if (errorMessage) {
                 throw new TypeError(errorMessage);
@@ -39,16 +40,16 @@ const methods = {
         }
     },
 
-    isOk: function (/*this*/) {
+    isOk(/*this*/) {
         return this.is_ok;
     },
 
-    isFail: function (/*this*/) {
+    isFail(/*this*/) {
         return !this.is_ok;
     },
 
     // (Result<T, F>, T -> T') -> Result<T', F>
-    map: function (/*this,*/ f) {
+    map(/*this,*/ f) {
         if (this.is_ok) {
             return Ok(f(this.value));
         } else {
@@ -57,7 +58,7 @@ const methods = {
     },
 
     // (Result<T, F>, F -> F') -> Result<T, F'>
-    mapFail: function (/*this,*/ f) {
+    mapFail(/*this,*/ f) {
         if (this.is_ok) {
             return this;
         } else {
@@ -69,7 +70,7 @@ const methods = {
 
     // (Result<T, F>, A) -> Result<_, F> | A
     // where A should := Result<T, F>
-    and: function (/*this,*/ rhsResult) {
+    and(/*this,*/ rhsResult) {
         if (this.is_ok) {
             return rhsResult;
         } else {
@@ -79,7 +80,7 @@ const methods = {
 
     // (Result<T, F>, A) -> Result<T | _> | A
     // where A should := Result<T, F>
-    or: function (/*this,*/ rhsResult) {
+    or(/*this,*/ rhsResult) {
         if (this.is_ok) {
             return this;
         } else {
@@ -90,7 +91,7 @@ const methods = {
     // (Result<T, F>, FN) -> Result<T, F> | A
     // where FN := T -> A
     // where A should := Result<T', F>
-    andThen: function (/*this,*/ f) {
+    andThen(/*this,*/ f) {
         if (this.is_ok) {
             return f(this.value);
         } else {
@@ -101,7 +102,7 @@ const methods = {
     // (Result<T, F>, FN -> Result<T, F> | A
     // where FN := F -> A
     // where A should := Result<T, F'>
-    orElse: function (/*this,*/ f) {
+    orElse(/*this,*/ f) {
         if (this.is_ok) {
             return this;
         } else {
@@ -112,7 +113,7 @@ const methods = {
     // (Result<T, F>) -> TList
     // where TList := [T]
     // such that TList.length === 0 || T.List.length === 1
-    toArray: function (/*this*/) {
+    toArray(/*this*/) {
         if (this.is_ok) {
             return [this.value];
         } else {
@@ -122,7 +123,7 @@ const methods = {
 
     // (Result<T, F>, A) -> T | A
     // where A should := T
-    unwrapOr: function (/*this,*/ defaultValue) {
+    unwrapOr(/*this,*/ defaultValue) {
         if (this.is_ok) {
             return this.value;
         } else {
@@ -132,7 +133,7 @@ const methods = {
 
     // (Result<T, F>, F -> A) -> T | A
     // where A should := T
-    unwrapOrElse: function (/*this,*/ defaultFn) {
+    unwrapOrElse(/*this,*/ defaultFn) {
         if (this.is_ok) {
             return this.value;
         } else {
@@ -140,8 +141,8 @@ const methods = {
         }
     },
 
-    // Fn(Result<T, F>, {Ok: function (value: T) -> void, Fail: function (failure: F) -> void}) -> void
-    match: function (/*this,*/ matchBlock) {
+    // Fn(Result<T, F>, {Ok(value: T) -> void, Fail(failure: F) -> void}) -> void
+    match(/*this,*/ matchBlock) {
         if (this.is_ok) {
             return matchBlock.Ok(this.value);
         } else {
@@ -151,7 +152,7 @@ const methods = {
 
     /// https://nodejs.org/api/util.html#util_custom_inspect_function_on_objects
     // Fn(Result<T, F>, Number, InspectOpts) -> String
-    inspect: function (/*this,*/ depth, opts) {
+    inspect(/* this,*/ depth, opts) {
         var tag = this.is_ok ? "Ok" : "Fail";
 
         if (depth < 0) {
@@ -168,12 +169,12 @@ const methods = {
     },
 
     // Fn(Result<T, F>, Fn(String) -> void, InspectOpts)
-    debug: function (/*this,*/ logfn, inspectOpts) {
+    debug(/*this,*/ logfn, inspectOpts) {
         logfn(inspect(this, inspectOpts));
     },
 
     // Fn(Result<T, F>, Fn(String) -> void, InspectOpts)
-    debugOk: function(/*this,*/ logfn, inspectOpts) {
+    debugOk(/*this,*/ logfn, inspectOpts) {
         if (this.is_ok) {
             logfn(inspect(this.value, inspectOpts));
         }
@@ -182,29 +183,26 @@ const methods = {
     },
 
     // Fn(Result<T, F>, Fn(String) -> void, InspectOpts)
-    debugFail: function(/*this,*/ logfn, inspectOpts) { 
+    debugFail(/*this,*/ logfn, inspectOpts) {
         if (!this.is_ok) {
             logfn(inspect(this.value, inspectOpts));
         }
 
         return this;
     }
-};
+}
 
 module.exports = {
     Ok: Ok,
-    Fail: Fail,
+    Fail: Fail
 };
 
-const methodToFunction = function (method) {
-    return function () {
-        var context = arguments[0];
-        var args = Array.prototype.slice.call(arguments, 1);
-        return method.apply(context, args);
-    };
-};
-
-Object.keys(methods).forEach(function (key) {
-    var method = methods[key];
-    module.exports[key] = methodToFunction(method);
+Object.getOwnPropertyNames(Result.prototype)
+.filter(function (v) { return v !== "constructor" && v !== "inspect" })
+.forEach(function (key) {
+    module.exports[key] = function() {
+        const result = arguments[0]
+        const args = Array.prototype.slice.call(arguments, 1)
+        return result[key].apply(result, args)
+    }
 });
