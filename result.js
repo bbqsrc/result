@@ -205,9 +205,9 @@ const methodToFunction = function (method) {
 };
 
 Object.keys(methods).forEach(function (key) {
-    // Breaks require in repl
+    // NOTE(bbqsrc): Breaks require in repl
     if (key === "inspect") {
-      return
+      return;
     }
 
     var method = methods[key];
